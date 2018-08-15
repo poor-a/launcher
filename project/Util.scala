@@ -25,7 +25,7 @@ object Util {
   )
   lazy val base: Seq[Setting[_]] = baseScalacOptions ++ Licensed.settings
   lazy val baseScalacOptions = Seq(
-    scalacOptions ++= Seq("-Xelide-below", "0"),
+    scalacOptions ++= Seq("-Xelide-below", "0", "-target:jvm-1.7"),
     scalacOptions ++= {CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 9)) => Nil // support 2.9 for some subprojects for the Scala Eclipse IDE
       case _            => Seq("-feature", "-language:implicitConversions", "-language:postfixOps", "-language:higherKinds", "-language:existentials")
@@ -38,12 +38,12 @@ object Util {
   lazy val minimalSettings: Seq[Setting[_]] = Defaults.paths ++ Seq[Setting[_]](crossTarget := target.value, name := thisProject(_.id).value)
 
 
-  def lastCompilationTime(analysis: sbt.inc.Analysis): Long =
+  def lastCompilationTime(analysis: xsbti.compile.CompileAnalysis): Long =
     {
-      val lastCompilation = analysis.compilations.allCompilations.lastOption
-      lastCompilation.map(_.startTime) getOrElse 0L
+      val lastCompilation = analysis.readCompilations.getAllCompilations.lastOption
+      lastCompilation.map(_.getStartTime) getOrElse 0L
     }
-  def generateVersionFile(fileName: String)(version: String, dir: File, s: TaskStreams, analysis: sbt.inc.Analysis): Seq[File] =
+  def generateVersionFile(fileName: String)(version: String, dir: File, s: TaskStreams, analysis: xsbti.compile.CompileAnalysis): Seq[File] =
     {
       import java.util.{ Date, TimeZone }
       val formatter = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmmss")

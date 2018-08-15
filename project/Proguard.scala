@@ -15,7 +15,7 @@ object LaunchProguard {
   lazy val settings: Seq[Setting[_]] =
     inScope(GlobalScope)(inConfig(Proguard)(globalSettings)) ++
       inConfig(Proguard)(baseSettings) :+
-      (libraryDependencies += "net.sf.proguard" % "proguard-base" % "4.8" % Proguard.name)
+      (libraryDependencies += "net.sf.proguard" % "proguard-base" % "5.3.2" % Proguard.name)
 
   /** Defaults */
   def globalSettings = Seq(
@@ -47,7 +47,7 @@ object LaunchProguard {
   def specific(launchSub: Reference): Seq[Setting[_]] = inConfig(Proguard)(Seq(
     keepFullClasses ++= "xsbti.**" :: Nil,
     artifactPath := target.value / ("sbt-launch-" + version.value + ".jar"),
-    options ++= dependencyOptions(launchSub).value,
+//    options ++= dependencyOptions(launchSub).value,
     options += "-injars " + mkpath(packageBin.value),
     packageBin := (packageBin in (launchSub, Compile)).value,
     options ++= mainClass.in(launchSub, Compile).value.toList map keepMain,
@@ -84,20 +84,20 @@ object LaunchProguard {
   // libraryFilter and the Scala library-specific filtering in mapInJars can be removed for 2.11, since it is properly modularized
   private def libraryFilter = "(!META-INF/**,!*.properties,!scala/util/parsing/*.class,**.class)"
   private def generalFilter = "(!META-INF/**,!*.properties)"
-
+/*
   def dependencyOptions(launchSub: Reference) = Def.task {
     val cp = (dependencyClasspath in (launchSub, Compile)).value
     val analysis = (compile in (launchSub, Compile)).value
     mapJars(cp.files, analysis.relations.allBinaryDeps.toSeq, streams.value.log)
   }
-
+*/
   def mapJars(in: Seq[File], all: Seq[File], log: Logger): Seq[String] =
     mapInJars(in, log) ++ mapLibraryJars(all filterNot in.toSet)
   def writeProguardConfiguration = Def.task {
     val content = options.value.mkString("\n")
     val conf = configurationFile.value
     if (!conf.exists || IO.read(conf) != content) {
-      streams.value.log.info("Proguard configuration written to " + conf)
+  //    streams.value.log.info("Proguard configuration written to " + conf)
       IO.write(conf, content)
     }
     conf
@@ -113,8 +113,10 @@ object LaunchProguard {
     val inJar = packageBin.value
     val outputJar = artifactPath.value
     val configFile = proguardConfiguration.value
+    val files = fullClasspath.value.files
+    val log = streams.value.log
     val f = FileFunction.cached(streams.value.cacheDirectory / "proguard", FilesInfo.hash) { _ =>
-      runProguard(outputJar, configFile, fullClasspath.value.files, streams.value.log)
+//      runProguard(outputJar, configFile, files, log)
       Set(outputJar)
     }
     f(Set(inJar, configFile)) // make the assumption that if the classpath changed, the outputJar would change
@@ -123,7 +125,7 @@ object LaunchProguard {
   def runProguard(outputJar: File, configFile: File, cp: Seq[File], log: Logger) {
     IO.delete(outputJar)
     val fileString = mkpath(configFile.getAbsolutePath, '\'')
-    val exitValue = Process("java", List("-Xmx256M", "-cp", Path.makeString(cp), "proguard.ProGuard", "-include " + fileString)) ! log
+    val exitValue = scala.sys.process.Process("java", List("-Xmx256M", "-cp", Path.makeString(cp), "proguard.ProGuard", "-include " + fileString)) ! log
     if (exitValue != 0) sys.error("Proguard failed with nonzero exit code (" + exitValue + ")")
   }
 

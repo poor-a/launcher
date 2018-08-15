@@ -3,23 +3,25 @@
  */
 package xsbt.boot
 
-import BootConfiguration.{ FjbgPackage, IvyPackage, SbtBootPackage, ScalaPackage }
+import BootConfiguration.{FjbgPackage, IvyPackage, SbtBootPackage, ScalaPackage}
 import scala.collection.immutable.Stream
 
 /**
- * A custom class loader to ensure the main part of sbt doesn't load any Scala or
- * Ivy classes from the jar containing the loader.
- */
-private[boot] final class BootFilteredLoader(parent: ClassLoader) extends ClassLoader(parent) {
+  * A custom class loader to ensure the main part of sbt doesn't load any Scala or
+  * Ivy classes from the jar containing the loader.
+  */
+private[boot] final class BootFilteredLoader(parent: ClassLoader)
+    extends ClassLoader(parent) {
   @throws(classOf[ClassNotFoundException])
-  override final def loadClass(className: String, resolve: Boolean): Class[_] =
-    {
-      // note that we allow xsbti.*
-      if (className.startsWith(ScalaPackage) || className.startsWith(IvyPackage) || className.startsWith(SbtBootPackage) || className.startsWith(FjbgPackage))
-        throw new ClassNotFoundException(className)
-      else
-        super.loadClass(className, resolve)
-    }
+  override final def loadClass(className: String,
+                               resolve: Boolean): Class[_] = {
+    // note that we allow xsbti.*
+    if (className.startsWith(ScalaPackage) || className.startsWith(IvyPackage) || className
+          .startsWith(SbtBootPackage) || className.startsWith(FjbgPackage))
+      throw new ClassNotFoundException(className)
+    else
+      super.loadClass(className, resolve)
+  }
   override def getResources(name: String) = excludedLoader.getResources(name)
   override def getResource(name: String) = excludedLoader.getResource(name)
 
@@ -30,10 +32,11 @@ private[boot] final class BootFilteredLoader(parent: ClassLoader) extends ClassL
 }
 
 object Loaders {
-  def apply(loader: ClassLoader): Stream[ClassLoader] =
-    {
-      def loaders(loader: ClassLoader, accum: Stream[ClassLoader]): Stream[ClassLoader] =
-        if (loader eq null) accum else loaders(loader.getParent, Stream.cons(loader, accum))
-      loaders(loader, Stream.empty)
-    }
+  def apply(loader: ClassLoader): Stream[ClassLoader] = {
+    def loaders(loader: ClassLoader,
+                accum: Stream[ClassLoader]): Stream[ClassLoader] =
+      if (loader eq null) accum
+      else loaders(loader.getParent, Stream.cons(loader, accum))
+    loaders(loader, Stream.empty)
+  }
 }

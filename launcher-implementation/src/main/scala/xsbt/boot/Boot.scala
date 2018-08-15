@@ -33,10 +33,15 @@ object Boot {
 
   def parseArgs(args: Array[String]): LauncherArguments = {
     @annotation.tailrec
-    def parse(args: List[String], isLocate: Boolean, remaining: List[String]): LauncherArguments =
+    def parse(args: List[String],
+              isLocate: Boolean,
+              remaining: List[String]): LauncherArguments =
       args match {
         case "--launcher-version" :: rest =>
-          println("sbt launcher version " + Package.getPackage("xsbt.boot").getImplementationVersion)
+          println(
+            "sbt launcher version " + Package
+              .getPackage("xsbt.boot")
+              .getImplementationVersion)
           exit(0)
         case "--locate" :: rest => parse(rest, true, remaining)
         case next :: rest       => parse(rest, isLocate, next :: remaining)
@@ -52,12 +57,12 @@ object Boot {
     case None          => ()
   }
   private def runImpl(args: LauncherArguments): Option[LauncherArguments] =
-    try
-      Launch(args) map exit
+    try Launch(args) map exit
     catch {
       case b: BootException           => errorAndExit(b.toString)
       case r: xsbti.RetrieveException => errorAndExit("Error: " + r.getMessage)
-      case r: xsbti.FullReload        => Some(new LauncherArguments(r.arguments.toList, false))
+      case r: xsbti.FullReload =>
+        Some(new LauncherArguments(r.arguments.toList, false))
       case e: Throwable =>
         e.printStackTrace
         errorAndExit(Pre.prefixError(e.toString))
